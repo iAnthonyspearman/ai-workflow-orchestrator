@@ -3,138 +3,76 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>AI Workflow Orchestrator | Anthony Spearman</title>
-
-  <link rel="stylesheet" href="style.css" />
-
-  <!-- Chart.js for visual execution analytics -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>AI Workflow Orchestrator</title>
+  <link rel="stylesheet" href="/style.css" />
 </head>
-
 <body>
-  <div class="page-shell">
-    <header class="top-nav">
-      <div class="brand">
-        <div class="brand-mark">AO</div>
-        <div>
-          <p class="eyebrow">AI Systems Lab</p>
-          <h1>AI Workflow Orchestrator</h1>
-        </div>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">AI Systems Lab</p>
+        <h1>AI Workflow Orchestrator</h1>
       </div>
-
-      <div class="nav-pill">Project 3 · Execution System</div>
+      <span class="badge">Execution Intelligence</span>
     </header>
 
-    <main>
-      <section class="hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow">From idea to execution</p>
-          <h2>Turn business goals into structured AI-powered workflows.</h2>
-          <p class="hero-text">
-            This system converts a goal, challenge, or business problem into a clear execution plan:
-            task breakdowns, priorities, timelines, risks, success metrics, visual analytics, and next best action.
-          </p>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">From messy input to structured action</p>
+        <h2>Paste anything. Get a clear AI-powered execution plan.</h2>
+        <p class="subtext">
+          Business ideas, customer notes, copied text, project problems, career goals, support issues, or vague thoughts.
+          This system turns raw input into priorities, risks, tasks, timeline, metrics, and executive next steps.
+        </p>
+      </div>
 
-          <div class="proof-row">
-            <div class="proof-card">
-              <span>01</span>
-              <strong>Structured Planning</strong>
-              <p>Transforms broad goals into organized workflows.</p>
-            </div>
+      <div class="panel">
+        <label>Workflow Mode</label>
+        <select id="mode">
+          <option>General Answer + Action Plan</option>
+          <option>Business Workflow</option>
+          <option>Customer Support Workflow</option>
+          <option>Project Execution Plan</option>
+          <option>AI Solutions Engineering Plan</option>
+          <option>Career / LinkedIn Strategy</option>
+        </select>
 
-            <div class="proof-card">
-              <span>02</span>
-              <strong>Visual Analytics</strong>
-              <p>Turns AI output into charts for priorities, risks, and task categories.</p>
-            </div>
+        <label>Paste Anything Here</label>
+        <textarea id="prompt" placeholder="Paste any notes, question, business problem, copied text, or project idea..."></textarea>
 
-            <div class="proof-card">
-              <span>03</span>
-              <strong>Solution Engineering</strong>
-              <p>Built for demos, PoCs, and customer-facing workflows.</p>
-            </div>
-          </div>
+        <button id="demoBtn" class="secondary">Use Executive Demo</button>
+        <button id="generateBtn">Generate Workflow</button>
+
+        <div id="loading" class="loading">
+          <div class="pulse"></div>
+          <p>AI agents are organizing the workflow...</p>
         </div>
+      </div>
+    </section>
 
-        <div class="mission-panel">
-          <div class="panel-header">
-            <p>Mission Input</p>
-            <span id="connectionStatus">Ready</span>
-          </div>
-
-          <label for="mode">Workflow Mode</label>
-          <select id="mode">
-            <option>Business Workflow</option>
-            <option>Sales Enablement</option>
-            <option>Customer Support</option>
-            <option>Product Launch</option>
-            <option>Technical Deployment</option>
-            <option>Operations Improvement</option>
-          </select>
-
-          <label for="goal">Goal or Business Problem</label>
-          <textarea
-            id="goal"
-            placeholder="Example: Help a sales team follow up with leads faster using AI."
-          ></textarea>
-
-          <button id="generateBtn">
-            Generate Workflow
-          </button>
-
-          <button id="demoBtn" class="secondary-btn">
-            Use Demo Example
-          </button>
+    <section class="results" id="results">
+      <div class="result-header">
+        <div>
+          <p class="eyebrow">Generated Workflow</p>
+          <h2 id="title">Awaiting mission input</h2>
         </div>
-      </section>
+        <span id="status" class="badge">Idle</span>
+      </div>
 
-      <section class="output-layout">
-        <aside class="history-panel">
-          <div class="section-heading">
-            <p>Prompt History</p>
-            <button id="clearHistoryBtn">Clear</button>
-          </div>
+      <div class="grid">
+        <article><h3>Executive Summary</h3><p id="summary">Enter a prompt to begin.</p></article>
+        <article><h3>Priorities</h3><ul id="priorities"><li>Waiting...</li></ul></article>
+        <article><h3>Risks</h3><ul id="risks"><li>Waiting...</li></ul></article>
+        <article><h3>Action Steps</h3><ul id="actions"><li>Waiting...</li></ul></article>
+        <article><h3>Timeline</h3><ul id="timeline"><li>Waiting...</li></ul></article>
+        <article><h3>Success Metrics</h3><ul id="metrics"><li>Waiting...</li></ul></article>
+        <article class="wide"><h3>Final Recommendation</h3><p id="recommendation">Recommendation will appear here.</p></article>
+      </div>
+    </section>
 
-          <div id="historyList" class="history-list">
-            <p class="empty-state">No saved workflows yet.</p>
-          </div>
-        </aside>
+    <footer>Built by Anthony Spearman - AI Workflow Orchestration Demo</footer>
+  </main>
 
-        <section class="results-panel">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Generated Workflow</p>
-              <h3 id="resultTitle">Awaiting mission input</h3>
-            </div>
-          </div>
-
-          <div id="loadingState" class="loading-state hidden">
-            <div class="loader"></div>
-            <p>Building your execution workflow...</p>
-          </div>
-
-          <div id="results" class="results">
-            <div class="welcome-card">
-              <h3>What this project proves</h3>
-              <p>
-                This project demonstrates AI workflow orchestration: taking a raw goal and turning it
-                into structured work. It is designed to support AI Solutions Engineering, business process
-                transformation, visual analytics, and customer-facing technical demos.
-              </p>
-            </div>
-          </div>
-        </section>
-      </section>
-    </main>
-
-    <footer>
-      <p>
-        Built by Anthony Spearman · Node.js · Vercel Serverless Functions · OpenAI API · Vanilla JavaScript · Chart.js
-      </p>
-    </footer>
-  </div>
-
-  <script src="app.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>

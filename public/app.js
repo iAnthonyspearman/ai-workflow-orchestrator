@@ -1,558 +1,172 @@
-const goalInput = document.getElementById("goal");
-const modeInput = document.getElementById("mode");
-const generateBtn = document.getElementById("generateBtn");
-const demoBtn = document.getElementById("demoBtn");
-const results = document.getElementById("results");
-const loadingState = document.getElementById("loadingState");
-const resultTitle = document.getElementById("resultTitle");
-const historyList = document.getElementById("historyList");
-const clearHistoryBtn = document.getElementById("clearHistoryBtn");
-const connectionStatus = document.getElementById("connectionStatus");
 
-const HISTORY_KEY = "ai-workflow-orchestrator-history";
+const $ = (id) => document.getElementById(id);
 
-let priorityChartInstance = null;
-let riskChartInstance = null;
-let categoryChartInstance = null;
+const modeContent = {
+  "General Answer + Action Plan": {
+    demo: "I need help organizing a situation into a clear answer and practical next steps.",
+    placeholder: "Ask anything or paste any copied text...",
+    fallback: {
+      title: "General Answer + Action Plan",
+      executiveSummary: "This mode gives a clear answer first, then turns the answer into practical next steps so the user knows what to do next.",
+      priorities: ["Understand the main question", "Give a direct answer", "Turn the answer into action"],
+      risks: ["The request may be too broad", "Important context may be missing", "The next step may need confirmation"],
+      actions: ["Summarize the issue", "Answer the core question", "List next steps", "Confirm what should happen next"],
+      timeline: ["Now: clarify the question", "Next: act on the best step", "Then: review results"],
+      metrics: ["Question answered", "Next step identified", "Confusion reduced"],
+      recommendation: "Start with the clearest answer, then move immediately into one practical action."
+    }
+  },
 
-function getHistory() {
-  return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-}
+  "Business Workflow": {
+    demo: "A business is losing revenue because customer notes, follow-ups, and decisions are scattered across texts, spreadsheets, and emails.",
+    placeholder: "Paste a business goal, revenue issue, sales process, or operations problem...",
+    fallback: {
+      title: "Business Workflow Plan",
+      executiveSummary: "This mode turns a business problem into an operating workflow focused on revenue, ownership, process clarity, and repeatable execution.",
+      priorities: ["Identify the business outcome", "Map the current process gap", "Assign ownership and follow-up steps"],
+      risks: ["Revenue may leak through missed follow-ups", "No clear owner may slow execution", "Manual tracking may create inconsistency"],
+      actions: ["Define the revenue or operations goal", "Create a repeatable follow-up process", "Assign owners to each step", "Track results weekly"],
+      timeline: ["Today: identify the process gap", "This week: build the workflow", "Next week: measure improvement"],
+      metrics: ["Follow-up completion rate", "Revenue opportunities recovered", "Process cycle time reduced"],
+      recommendation: "Build the workflow around the business outcome first, then automate the repeated steps."
+    }
+  },
 
-function saveHistory(item) {
-  const history = getHistory();
-  const updatedHistory = [item, ...history].slice(0, 8);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
-  renderHistory();
-}
+  "Customer Support Workflow": {
+    demo: "Customers keep contacting support about delayed responses, unclear updates, and repeated billing confusion.",
+    placeholder: "Paste support tickets, customer complaints, escalation notes, or service issues...",
+    fallback: {
+      title: "Customer Support Workflow",
+      executiveSummary: "This mode organizes customer issues into a support workflow focused on triage, root cause, escalation, resolution quality, and customer experience.",
+      priorities: ["Classify the customer issue", "Identify root causes", "Create an escalation and resolution path"],
+      risks: ["Customers may churn if response time stays slow", "Repeated issues may hide a deeper process problem", "Support teams may lack clear escalation rules"],
+      actions: ["Group tickets by issue type", "Identify repeated complaints", "Create response templates", "Escalate high-risk customers", "Track resolution time"],
+      timeline: ["Now: triage incoming issues", "24 hours: resolve urgent cases", "This week: fix repeated root causes"],
+      metrics: ["First response time", "Resolution time", "Customer satisfaction", "Repeat ticket reduction"],
+      recommendation: "Start by identifying the top repeated customer issue, then build a faster triage and escalation workflow around it."
+    }
+  },
 
-function clearHistory() {
-  localStorage.removeItem(HISTORY_KEY);
-  renderHistory();
-}
+  "Project Execution Plan": {
+    demo: "We need to launch a new AI demo site this week with UI improvements, API testing, GitHub cleanup, Vercel deployment, and LinkedIn positioning.",
+    placeholder: "Paste a project goal, deadline, assignment, launch plan, or team objective...",
+    fallback: {
+      title: "Project Execution Plan",
+      executiveSummary: "This mode converts a project goal into phases, tasks, blockers, deadlines, and launch-ready execution steps.",
+      priorities: ["Define the final deliverable", "Break work into phases", "Identify blockers before launch"],
+      risks: ["Scope may expand too much", "Testing may be skipped", "Deployment issues may delay launch"],
+      actions: ["Create project phases", "List deliverables", "Assign deadlines", "Test the final version", "Prepare launch materials"],
+      timeline: ["Phase 1: plan and structure", "Phase 2: build and test", "Phase 3: deploy and present"],
+      metrics: ["Deliverables completed", "Bugs resolved", "Deployment successful", "Demo ready"],
+      recommendation: "Move in phases: build the core first, test the workflow second, then polish for launch."
+    }
+  },
 
-function renderHistory() {
-  const history = getHistory();
+  "AI Solutions Engineering Plan": {
+    demo: "A company has support tickets, sales notes, project updates, and process issues scattered across emails, docs, and spreadsheets.",
+    placeholder: "Paste a company problem that AI could solve, messy process notes, or automation idea...",
+    fallback: {
+      title: "AI Solutions Engineering Plan",
+      executiveSummary: "This mode translates a business problem into an AI solution design with inputs, workflow logic, API behavior, outputs, automation opportunities, and implementation steps.",
+      priorities: ["Define the business problem", "Identify data inputs", "Design the AI workflow output"],
+      risks: ["Bad input data may weaken results", "The workflow may lack human review", "The solution may not connect to real business action"],
+      actions: ["Collect messy business inputs", "Create prompt and API logic", "Structure AI output into useful sections", "Add review and approval steps", "Deploy and test with real examples"],
+      timeline: ["Discovery: define the problem", "Prototype: build the AI workflow", "Deployment: test and launch", "Optimization: improve outputs"],
+      metrics: ["Manual work reduced", "Output accuracy improved", "Workflow completion time reduced", "Business decisions supported"],
+      recommendation: "Design the AI system around the business decision it helps people make, not just around text generation."
+    }
+  },
 
-  if (!history.length) {
-    historyList.innerHTML = `<p class="empty-state">No saved workflows yet.</p>`;
-    return;
+  "Career / LinkedIn Strategy": {
+    demo: "I am building a portfolio for AI Solutions Engineering and need recruiters to understand my projects, skills, and value.",
+    placeholder: "Paste a career goal, LinkedIn post, job description, recruiter message, or portfolio update...",
+    fallback: {
+      title: "Career and LinkedIn Strategy",
+      executiveSummary: "This mode turns career goals into recruiter-facing positioning, portfolio messaging, proof of skills, and next professional actions.",
+      priorities: ["Clarify the target role", "Translate projects into business value", "Create recruiter-friendly proof"],
+      risks: ["Messaging may sound too broad", "Projects may not clearly show business impact", "Recruiters may not understand the technical value"],
+      actions: ["Define the target AI role", "Rewrite project descriptions around outcomes", "Update LinkedIn headline and featured projects", "Create a short recruiter pitch", "Apply to aligned roles"],
+      timeline: ["Today: update positioning", "This week: polish portfolio", "Next week: begin outreach"],
+      metrics: ["Profile views", "Recruiter responses", "Applications submitted", "Interviews booked"],
+      recommendation: "Position every project as proof that you can turn business problems into working AI systems."
+    }
   }
+};
 
-  historyList.innerHTML = history
-    .map((item, index) => {
-      return `
-        <div class="history-item" data-index="${index}">
-          <strong>${escapeHTML(item.mode)}</strong>
-          <p>${escapeHTML(item.goal.slice(0, 90))}${item.goal.length > 90 ? "..." : ""}</p>
-        </div>
-      `;
-    })
-    .join("");
+function applyModeExperience() {
+  const mode = $("mode").value;
+  const data = modeContent[mode];
+  if (!data) return;
+  $("prompt").placeholder = data.placeholder;
+}
 
-  document.querySelectorAll(".history-item").forEach((item) => {
-    item.addEventListener("click", () => {
-      const index = Number(item.dataset.index);
-      const selected = getHistory()[index];
-
-      if (selected) {
-        renderWorkflow(selected.workflow);
-        resultTitle.textContent = selected.workflow.goalSummary || "Generated Workflow";
-      }
-    });
+function fillList(id, items) {
+  const el = $(id);
+  el.innerHTML = "";
+  (items && items.length ? items : ["No items returned."]).forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    el.appendChild(li);
   });
 }
 
-function setLoading(isLoading) {
-  generateBtn.disabled = isLoading;
-  loadingState.classList.toggle("hidden", !isLoading);
-  results.classList.toggle("hidden", isLoading);
-  connectionStatus.textContent = isLoading ? "Generating" : "Ready";
+function render(result) {
+  $("title").textContent = result.title || "Workflow Generated";
+  $("summary").textContent = result.executiveSummary || "Workflow created.";
+  fillList("priorities", result.priorities);
+  fillList("risks", result.risks);
+  fillList("actions", result.actions);
+  fillList("timeline", result.timeline);
+  fillList("metrics", result.metrics);
+  $("recommendation").textContent = result.recommendation || "Move forward with the highest-impact next step.";
 }
 
-async function generateWorkflow() {
-  const goal = goalInput.value.trim();
-  const mode = modeInput.value;
+function getModeFallback() {
+  const mode = $("mode").value;
+  return modeContent[mode]?.fallback || modeContent["General Answer + Action Plan"].fallback;
+}
 
-  if (!goal) {
-    results.innerHTML = `
-      <div class="welcome-card">
-        <h3>Enter a goal first</h3>
-        <p>Please type a business goal, customer problem, or operational challenge before generating a workflow.</p>
-      </div>
-    `;
-    return;
-  }
+async function generate() {
+  const mode = $("mode").value;
+  const prompt = $("prompt").value.trim() || modeContent[mode]?.demo || "Create a useful workflow.";
 
-  setLoading(true);
+  $("loading").classList.add("active");
+  $("status").textContent = "Thinking";
+  $("title").textContent = "Building " + mode + "...";
 
   try {
-    const response = await fetch("/api/generate-workflow", {
+    const res = await fetch("/api/orchestrate", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        goal,
-        mode
-      })
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ prompt, mode })
     });
 
-    const responseText = await response.text();
+    const data = await res.json();
 
-    let data;
-
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      throw new Error(
-        `The server did not return JSON. Server said: ${responseText.slice(0, 220)}`
-      );
+    if (!res.ok || !data.result) {
+      render(getModeFallback());
+      $("status").textContent = "Mode Demo Active";
+    } else {
+      render(data.result);
+      $("status").textContent = "Complete";
     }
-
-    if (!response.ok) {
-      throw new Error(data.details || data.error || "Unable to generate workflow.");
-    }
-
-    const workflow = data.workflow;
-
-    renderWorkflow(workflow);
-
-    resultTitle.textContent = workflow.goalSummary || "Generated Workflow";
-
-    saveHistory({
-      goal,
-      mode,
-      workflow,
-      createdAt: new Date().toISOString()
-    });
-  } catch (error) {
-    results.innerHTML = `
-      <div class="welcome-card">
-        <h3>Workflow generation failed</h3>
-        <p>${escapeHTML(error.message)}</p>
-        <p class="small-note">Check your terminal for the backend error. Also confirm .env.local has OPENAI_API_KEY and OPENAI_MODEL.</p>
-      </div>
-    `;
+  } catch (err) {
+    render(getModeFallback());
+    $("status").textContent = "Mode Demo Active";
   } finally {
-    setLoading(false);
+    $("loading").classList.remove("active");
+    $("results").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
-function renderWorkflow(workflow) {
-  destroyCharts();
+$("mode").addEventListener("change", applyModeExperience);
 
-  results.innerHTML = `
-    <div class="summary-card">
-      <p class="eyebrow">Goal Summary</p>
-      <h3>${escapeHTML(workflow.goalSummary || "No summary provided")}</h3>
-      <p>${escapeHTML(workflow.businessContext || "")}</p>
-    </div>
+$("generateBtn").addEventListener("click", generate);
 
-    <div class="workflow-card">
-      <p class="eyebrow">Workflow Strategy</p>
-      <h3>Execution Strategy</h3>
-      <p>${escapeHTML(workflow.workflowStrategy || "")}</p>
-    </div>
+$("demoBtn").addEventListener("click", () => {
+  const mode = $("mode").value;
+  $("prompt").value = modeContent[mode]?.demo || modeContent["General Answer + Action Plan"].demo;
+  applyModeExperience();
+});
 
-    <div class="analytics-card">
-      <p class="eyebrow">Visual Execution Analytics</p>
-      <h3>Workflow Intelligence Dashboard</h3>
-      <p>
-        These charts convert the AI-generated workflow into visual business intelligence, helping leaders quickly understand priorities, risk exposure, and work categories.
-      </p>
-
-      <div class="analytics-grid">
-        <div class="chart-card">
-          <h4>Priority Breakdown</h4>
-          <div class="chart-wrap">
-            <canvas id="priorityChart"></canvas>
-          </div>
-        </div>
-
-        <div class="chart-card">
-          <h4>Risk Impact</h4>
-          <div class="chart-wrap">
-            <canvas id="riskChart"></canvas>
-          </div>
-        </div>
-
-        <div class="chart-card wide">
-          <h4>Task Category Distribution</h4>
-          <div class="chart-wrap">
-            <canvas id="categoryChart"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="workflow-card">
-      <p class="eyebrow">Next Best Action</p>
-      <h3>${escapeHTML(workflow.nextBestAction || "No next action provided")}</h3>
-    </div>
-
-    <div class="card-grid">
-      <div class="workflow-card">
-        <p class="eyebrow">Timeline</p>
-        <h3>Execution Phases</h3>
-        <div class="timeline-list">
-          ${renderTimeline(workflow.timeline || [])}
-        </div>
-      </div>
-
-      <div class="workflow-card">
-        <p class="eyebrow">Success Metrics</p>
-        <h3>How to Measure Progress</h3>
-        <div class="metric-list">
-          ${renderMetrics(workflow.successMetrics || [])}
-        </div>
-      </div>
-    </div>
-
-    <div class="workflow-card">
-      <p class="eyebrow">Task Board</p>
-      <h3>AI-Generated Execution Board</h3>
-      <div class="task-board">
-        ${renderTaskColumn("High Priority", workflow.tasks || [], "High")}
-        ${renderTaskColumn("Medium Priority", workflow.tasks || [], "Medium")}
-        ${renderTaskColumn("Low Priority", workflow.tasks || [], "Low")}
-      </div>
-    </div>
-
-    <div class="workflow-card">
-      <p class="eyebrow">Risk Review</p>
-      <h3>Risks and Mitigations</h3>
-      <div class="risk-list">
-        ${renderRisks(workflow.risks || [])}
-      </div>
-    </div>
-  `;
-
-  renderCharts(workflow);
-}
-
-function renderTimeline(timeline) {
-  if (!timeline.length) {
-    return `<p>No timeline provided.</p>`;
-  }
-
-  return timeline
-    .map((item) => {
-      return `
-        <div class="timeline-item">
-          <span>${escapeHTML(item.timeframe || "")}</span>
-          <strong>${escapeHTML(item.phase || "")}</strong>
-          <p>${escapeHTML(item.objective || "")}</p>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-function renderMetrics(metrics) {
-  if (!metrics.length) {
-    return `<p>No metrics provided.</p>`;
-  }
-
-  return metrics
-    .map((metric) => {
-      return `
-        <div class="metric-card">
-          <p>${escapeHTML(metric)}</p>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-function renderTaskColumn(title, tasks, priority) {
-  const filteredTasks = tasks.filter((task) => task.priority === priority);
-
-  return `
-    <div class="task-column">
-      <h4>${escapeHTML(title)}</h4>
-      ${
-        filteredTasks.length
-          ? filteredTasks.map(renderTask).join("")
-          : `<p class="empty-state">No ${priority.toLowerCase()} priority tasks.</p>`
-      }
-    </div>
-  `;
-}
-
-function renderTask(task) {
-  return `
-    <div class="task-card">
-      <h5>${escapeHTML(task.title || "Untitled Task")}</h5>
-      <p>${escapeHTML(task.description || "")}</p>
-      <div class="task-meta">
-        <span class="badge ${getPriorityClass(task.priority)}">${escapeHTML(task.priority || "Medium")}</span>
-        <span class="badge badge-category">${escapeHTML(task.category || "General")}</span>
-        <span class="badge badge-category">${escapeHTML(task.status || "Pending")}</span>
-      </div>
-    </div>
-  `;
-}
-
-function renderRisks(risks) {
-  if (!risks.length) {
-    return `<p>No risks provided.</p>`;
-  }
-
-  return risks
-    .map((item) => {
-      return `
-        <div class="risk-card">
-          <span class="badge ${getPriorityClass(item.impact)}">${escapeHTML(item.impact || "Medium")} Impact</span>
-          <strong>${escapeHTML(item.risk || "")}</strong>
-          <p>${escapeHTML(item.mitigation || "")}</p>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-function renderCharts(workflow) {
-  if (typeof Chart === "undefined") {
-    console.warn("Chart.js is not loaded.");
-    return;
-  }
-
-  const tasks = Array.isArray(workflow.tasks) ? workflow.tasks : [];
-  const risks = Array.isArray(workflow.risks) ? workflow.risks : [];
-
-  const priorityCounts = countByValue(tasks, "priority", ["High", "Medium", "Low"]);
-  const riskCounts = countByValue(risks, "impact", ["High", "Medium", "Low"]);
-  const categoryCounts = countDynamicValues(tasks, "category");
-
-  const textColor = "#cbd5e1";
-  const gridColor = "rgba(148, 163, 184, 0.16)";
-
-  const priorityCanvas = document.getElementById("priorityChart");
-  const riskCanvas = document.getElementById("riskChart");
-  const categoryCanvas = document.getElementById("categoryChart");
-
-  if (priorityCanvas) {
-    priorityChartInstance = new Chart(priorityCanvas, {
-      type: "doughnut",
-      data: {
-        labels: ["High", "Medium", "Low"],
-        datasets: [
-          {
-            data: [priorityCounts.High, priorityCounts.Medium, priorityCounts.Low],
-            backgroundColor: [
-              "rgba(251, 113, 133, 0.85)",
-              "rgba(251, 191, 36, 0.85)",
-              "rgba(52, 211, 153, 0.85)"
-            ],
-            borderColor: "rgba(15, 23, 42, 0.95)",
-            borderWidth: 4,
-            hoverOffset: 8
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "62%",
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: {
-              color: textColor,
-              usePointStyle: true,
-              padding: 18
-            }
-          }
-        }
-      }
-    });
-  }
-
-  if (riskCanvas) {
-    riskChartInstance = new Chart(riskCanvas, {
-      type: "bar",
-      data: {
-        labels: ["High", "Medium", "Low"],
-        datasets: [
-          {
-            label: "Risks",
-            data: [riskCounts.High, riskCounts.Medium, riskCounts.Low],
-            backgroundColor: [
-              "rgba(251, 113, 133, 0.75)",
-              "rgba(251, 191, 36, 0.75)",
-              "rgba(52, 211, 153, 0.75)"
-            ],
-            borderColor: [
-              "rgba(251, 113, 133, 1)",
-              "rgba(251, 191, 36, 1)",
-              "rgba(52, 211, 153, 1)"
-            ],
-            borderWidth: 1,
-            borderRadius: 12
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            ticks: {
-              color: textColor
-            },
-            grid: {
-              color: "transparent"
-            }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: {
-              color: textColor,
-              precision: 0
-            },
-            grid: {
-              color: gridColor
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            display: false
-          }
-        }
-      }
-    });
-  }
-
-  if (categoryCanvas) {
-    const labels = Object.keys(categoryCounts);
-    const data = Object.values(categoryCounts);
-
-    categoryChartInstance = new Chart(categoryCanvas, {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [
-          {
-            label: "Tasks",
-            data,
-            backgroundColor: "rgba(103, 232, 249, 0.72)",
-            borderColor: "rgba(103, 232, 249, 1)",
-            borderWidth: 1,
-            borderRadius: 12
-          }
-        ]
-      },
-      options: {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            beginAtZero: true,
-            ticks: {
-              color: textColor,
-              precision: 0
-            },
-            grid: {
-              color: gridColor
-            }
-          },
-          y: {
-            ticks: {
-              color: textColor
-            },
-            grid: {
-              color: "transparent"
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            display: false
-          }
-        }
-      }
-    });
-  }
-}
-
-function destroyCharts() {
-  if (priorityChartInstance) {
-    priorityChartInstance.destroy();
-    priorityChartInstance = null;
-  }
-
-  if (riskChartInstance) {
-    riskChartInstance.destroy();
-    riskChartInstance = null;
-  }
-
-  if (categoryChartInstance) {
-    categoryChartInstance.destroy();
-    categoryChartInstance = null;
-  }
-}
-
-function countByValue(items, key, expectedValues) {
-  const counts = {};
-
-  expectedValues.forEach((value) => {
-    counts[value] = 0;
-  });
-
-  items.forEach((item) => {
-    const value = item[key];
-
-    if (counts[value] !== undefined) {
-      counts[value] += 1;
-    }
-  });
-
-  return counts;
-}
-
-function countDynamicValues(items, key) {
-  const counts = {};
-
-  items.forEach((item) => {
-    const rawValue = item[key] || "General";
-    const value = String(rawValue).trim() || "General";
-
-    counts[value] = (counts[value] || 0) + 1;
-  });
-
-  if (!Object.keys(counts).length) {
-    counts.General = 0;
-  }
-
-  return counts;
-}
-
-function getPriorityClass(priority) {
-  if (priority === "High") return "badge-high";
-  if (priority === "Low") return "badge-low";
-  return "badge-medium";
-}
-
-function escapeHTML(value) {
-  return String(value || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function useDemoExample() {
-  modeInput.value = "Sales Enablement";
-  goalInput.value =
-    "Help a professional sports sales team improve follow-up with interested fans, identify high-value ticket opportunities, and turn community engagement into stronger ticket sales and partnership conversations.";
-}
-
-generateBtn.addEventListener("click", generateWorkflow);
-demoBtn.addEventListener("click", useDemoExample);
-clearHistoryBtn.addEventListener("click", clearHistory);
-
-renderHistory();
+applyModeExperience();
